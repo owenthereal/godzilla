@@ -12,20 +12,24 @@ As Godzilla becomes mature, `babylon` will be compiled to Go source code using G
 
 **Note that Godzilla is at a very early stage and only very few language features are implemented**
 
-[![asciicast](https://asciinema.org/a/120175.png)](https://asciinema.org/a/120175)
+[![asciicast](https://asciinema.org/a/0e2ce574fm9d23mwxmfg0jo93.png)](https://asciinema.org/a/0e2ce574fm9d23mwxmfg0jo93)
 
 ## Compiling
 
 Make sure Go and Node.js are installed properly, then run:
 
 ```
-make
+$ make
 ```
 
 ## Running
 
 ```
-echo "console.log('Hello, Godzilla')" | bin/godzilla run
+$ echo "console.log('Hello, Godzilla')" | bin/godzilla run
+Hello, Godzilla
+$ echo "console.log('Hello, Godzilla')" | bin/godzilla build -o outbin
+$ ./outbin
+Hello, Godzilla
 ```
 
 ## Related Arts
