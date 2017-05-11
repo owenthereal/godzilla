@@ -12,6 +12,8 @@ As Godzilla becomes mature, `babylon` will be compiled to Go source code using G
 
 **Note that Godzilla is at a very early stage and only very few language features are implemented**
 
+[![asciicast](https://asciinema.org/a/120175.png)](https://asciinema.org/a/120175)
+
 ## Compiling
 
 Make sure Go and Node.js are installed properly, then run:
