@@ -1,0 +1,20 @@
+{
+  "name": "godzilla-parser",
+  "version": "1.0.0",
+  "description": "",
+  "bin": "lib/index.js",
+  "scripts": {
+    "build": "npm run babel && npm run pkg",
+    "babel": "babel src -d lib",
+    "pkg": "pkg -t node7-${OSTYPE//[0-9.]/} --out-dir ../bin ."
+  },
+  "author": "Jingwen Owen Ou",
+  "dependencies": {
+    "babylon": "v7.0.0-beta.8"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-preset-env": "^1.4.0",
+    "pkg": "^3.0.3"
+  }
+}

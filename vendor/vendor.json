@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "2bLk/+qSRrzctGuDCiCPygXbUQQ=",
+			"path": "github.com/spf13/cobra",
+			"revision": "1dd5ff2e11b6dca62fdcb275eb804b94607d8b06",
+			"revisionTime": "2016-09-04T11:42:13Z"
+		}
+	],
+	"rootPath": "github.com/jingweno/godzilla"
+}
