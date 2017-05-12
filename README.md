@@ -27,9 +27,25 @@ $ make
 ```
 $ echo "console.log('Hello, Godzilla')" | bin/godzilla run
 Hello, Godzilla
-$ echo "console.log('Hello, Godzilla')" | bin/godzilla build -o outbin
-$ ./outbin
+$ echo "console.log('Hello, Godzilla')" | bin/godzilla build -o hello
+$ ./hello
 Hello, Godzilla
+```
+
+## Performance
+
+There are still lots of works to get Godzilla to a stable state, but this is one preliminary benchmark for a simple script:
+
+```
+$ echo "console.log('Hello, Godzilla')" | bin/godzilla build -o hello
+$ time ./hello
+Hello, Godzilla
+./hello  0.00s user 0.00s system 30% cpu 0.013 total
+
+$ echo "console.log('Hello, Godzilla')" > hello.js
+$ time node hello.js
+Hello, Godzilla
+node hello.js  0.07s user 0.03s system 70% cpu 0.137 total
 ```
 
 ## Related Arts
