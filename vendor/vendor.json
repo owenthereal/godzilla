@@ -3,10 +3,22 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "2bLk/+qSRrzctGuDCiCPygXbUQQ=",
+			"checksumSHA1": "40vJyUB4ezQSn/NSadsKEOrudMc=",
+			"path": "github.com/inconshreveable/mousetrap",
+			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"revisionTime": "2014-10-17T20:07:13Z"
+		},
+		{
+			"checksumSHA1": "mVpg0aL1S+GCSHhkeuns8Y+a2AE=",
 			"path": "github.com/spf13/cobra",
-			"revision": "1dd5ff2e11b6dca62fdcb275eb804b94607d8b06",
-			"revisionTime": "2016-09-04T11:42:13Z"
+			"revision": "4cdb38c072b86bf795d2c81de50784d9fdd6eb77",
+			"revisionTime": "2017-05-15T07:49:18Z"
+		},
+		{
+			"checksumSHA1": "STxYqRb4gnlSr3mRpT+Igfdz/kM=",
+			"path": "github.com/spf13/pflag",
+			"revision": "e57e3eeb33f795204c1ca35f56c44f83227c6e66",
+			"revisionTime": "2017-05-08T18:43:26Z"
 		}
 	],
 	"rootPath": "github.com/jingweno/godzilla"

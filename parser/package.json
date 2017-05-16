@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run babel && npm run pkg",
     "babel": "babel src -d lib",
-    "pkg": "pkg -t node7-${OSTYPE//[0-9.]/} --out-dir ../bin ."
+    "pkg": "pkg -t node7-$(node -r 'os' -p 'os.platform()') --out-dir ../bin ."
   },
   "author": "Jingwen Owen Ou",
   "dependencies": {
