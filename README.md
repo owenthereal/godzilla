@@ -34,7 +34,7 @@ Hello, Godzilla
 
 ## Performance
 
-There are still lots of works to get Godzilla to a stable state, but this is one preliminary benchmark for a simple script:
+There are still lots of works to get Godzilla to a stable state, but this is one preliminary benchmark for a simple script about program startup time:
 
 ```
 $ echo "console.log('Hello, Godzilla')" | bin/godzilla build -o hello
