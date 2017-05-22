@@ -7,3 +7,6 @@ build-godzilla:
 
 build-godzilla-parser:
 	cd parser && npm install && npm run build
+
+ftest: build
+	go test ./ftest/...
