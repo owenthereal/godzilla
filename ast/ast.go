@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -83,6 +84,18 @@ type File struct {
 	Program *Program
 }
 
+func (f *File) UnmarshalJSON(data []byte) error {
+	m := make(map[string]interface{})
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+
+	f.Attr = unmarshalAttr(m)
+	f.Program = unmarshalProgram(convertMap(m["program"]))
+
+	return nil
+}
+
 func (f *File) UnmarshalMap(m M) {
 	f.Attr = unmarshalAttr(m)
 	f.Program = unmarshalProgram(convertMap(m["program"]))
@@ -93,6 +106,10 @@ func (f *File) Compile(code *source.Code) {
 }
 
 func (f *File) String() string {
+	if f.Program == nil {
+		return ""
+	}
+
 	return f.Program.String()
 }
 

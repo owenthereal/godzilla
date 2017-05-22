@@ -77,13 +77,10 @@ func compileSource() (*source.Code, error) {
 		return nil, fmt.Errorf("error parsing JavaScript %s: %s", err, stdoutStderr)
 	}
 
-	m := make(map[string]interface{})
-	if err := json.NewDecoder(bytes.NewBuffer(stdoutStderr)).Decode(&m); err != nil {
+	f := &ast.File{}
+	if err := json.NewDecoder(bytes.NewBuffer(stdoutStderr)).Decode(f); err != nil {
 		return nil, err
 	}
-
-	f := &ast.File{}
-	f.UnmarshalMap(m)
 
 	return compiler.Compile(f), nil
 }
