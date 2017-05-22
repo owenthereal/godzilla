@@ -11,5 +11,9 @@ install:
 script:
   - make ftest
 
+cache:
+  directories:
+    - $HOME/.pkg-cache
+
 notifications:
   email: false
