@@ -87,6 +87,7 @@ func unmarshalVariableDeclaration(m m) *VariableDeclaration {
 }
 
 // expressions
+
 func unmarshalExpressions(m []m) []Expression {
 	var e []Expression
 	for _, mm := range m {
@@ -141,6 +142,7 @@ func unmarshalMemberExpression(m m) *MemberExpression {
 
 	return e
 }
+
 func unmarshalVariableDeclarator(m []m) []*VariableDeclarator {
 	var d []*VariableDeclarator
 	for _, mm := range m {

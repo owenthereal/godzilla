@@ -5,18 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"github.com/jingweno/godzilla/source"
 )
 
 type m map[string]interface{}
 
-type Compiler interface {
-	Compile(*source.Code)
-}
-
 type Node interface {
-	Compiler
 	fmt.Stringer
 }
 
@@ -37,10 +30,6 @@ func (f *File) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *File) Compile(code *source.Code) {
-	f.Program.Compile(code)
-}
-
 func (f *File) String() string {
 	if f.Program == nil {
 		return ""
@@ -53,12 +42,6 @@ type Program struct {
 	*Attr
 	SourceType string
 	Body       []Statement
-}
-
-func (p *Program) Compile(code *source.Code) {
-	for _, s := range p.Body {
-		s.Compile(code)
-	}
 }
 
 func (p *Program) String() string {
@@ -107,10 +90,6 @@ type ExpressionStatement struct {
 
 func (e *ExpressionStatement) statementNode() {}
 
-func (e *ExpressionStatement) Compile(code *source.Code) {
-	e.Expression.Compile(code)
-}
-
 func (e *ExpressionStatement) String() string {
 	return e.Expression.String()
 }
@@ -132,10 +111,6 @@ func (v *VariableDeclaration) statementNode() {}
 
 func (v *VariableDeclaration) declarationNode() {}
 
-func (v *VariableDeclaration) Compile(code *source.Code) {
-	// TODO
-}
-
 func (v *VariableDeclaration) String() string {
 	var out bytes.Buffer
 
@@ -151,10 +126,6 @@ type VariableDeclarator struct {
 	*Attr
 	ID   *Identifier
 	Init Expression
-}
-
-func (v *VariableDeclarator) Compile(code *source.Code) {
-	// TODO
 }
 
 func (v *VariableDeclarator) String() string {
@@ -180,10 +151,6 @@ type Identifier struct {
 
 func (i *Identifier) expressionNode() {}
 
-func (i *Identifier) Compile(code *source.Code) {
-	code.Write(strings.Title(i.Name))
-}
-
 func (i *Identifier) String() string {
 	return i.Name
 }
@@ -195,18 +162,6 @@ type CallExpression struct {
 }
 
 func (c *CallExpression) expressionNode() {}
-
-func (c *CallExpression) Compile(code *source.Code) {
-	c.Callee.Compile(code)
-	code.Write("(")
-	for i, arg := range c.Arguments {
-		arg.Compile(code)
-		if i != len(c.Arguments)-1 {
-			code.Write(", ")
-		}
-	}
-	code.Write(")\n")
-}
 
 func (c *CallExpression) String() string {
 	var out bytes.Buffer
@@ -234,13 +189,6 @@ type MemberExpression struct {
 
 func (e *MemberExpression) expressionNode() {}
 
-func (e *MemberExpression) Compile(code *source.Code) {
-	// TODO: ignoring computed value for now
-	e.Object.Compile(code)
-	code.Write(".")
-	e.Property.Compile(code)
-}
-
 func (e *MemberExpression) String() string {
 	return fmt.Sprintf("%s.%s", e.Object, e.Property)
 }
@@ -264,8 +212,4 @@ func (s *StringLiteral) literalNode() {}
 
 func (s *StringLiteral) String() string {
 	return fmt.Sprintf(`"%s"`, s.Value)
-}
-
-func (s *StringLiteral) Compile(code *source.Code) {
-	code.Write(fmt.Sprintf(`"%s"`, s.Value))
 }
