@@ -2,80 +2,15 @@ package ast
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
-
-	"github.com/jingweno/godzilla/source"
 )
 
-type M map[string]interface{}
-
-type MapUnmarshaler interface {
-	UnmarshalMap(M)
-}
-
-type Compiler interface {
-	Compile(*source.Code)
-}
+type m map[string]interface{}
 
 type Node interface {
-	MapUnmarshaler
-	Compiler
 	fmt.Stringer
-}
-
-type Statement interface {
-	Node
-	statementNode()
-}
-
-type Declaration interface {
-	Statement
-	declarationNode()
-}
-
-type Expression interface {
-	Node
-	expressionNode()
-}
-
-type Literal interface {
-	Expression
-	literalNode()
-}
-
-type Attr struct {
-	Type  string
-	Start int
-	End   int
-	Loc   *SourceLocation
-}
-
-func (a *Attr) UnmarshalMap(m M) {
-	a.Type = convertString(m["type"])
-	a.Start = convertInt(m["start"])
-	a.End = convertInt(m["end"])
-	a.Loc = unmarshalSourceLocation(convertMap(m["loc"]))
-}
-
-type SourceLocation struct {
-	Start *Position
-	End   *Position
-}
-
-func (s *SourceLocation) UnmarshalMap(m M) {
-	s.Start = unmarshalPosition(convertMap(m["start"]))
-	s.End = unmarshalPosition(convertMap(m["end"]))
-}
-
-type Position struct {
-	Line   int `json:"line,omitempty"`
-	Column int `json:"column,omitempty"`
-}
-
-func (p *Position) UnmarshalMap(m M) {
-	p.Line = convertInt(m["line"])
-	p.Column = convertInt(m["column"])
 }
 
 type File struct {
@@ -83,16 +18,23 @@ type File struct {
 	Program *Program
 }
 
-func (f *File) UnmarshalMap(m M) {
+func (f *File) UnmarshalJSON(data []byte) error {
+	m := make(map[string]interface{})
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+
 	f.Attr = unmarshalAttr(m)
 	f.Program = unmarshalProgram(convertMap(m["program"]))
-}
 
-func (f *File) Compile(code *source.Code) {
-	f.Program.Compile(code)
+	return nil
 }
 
 func (f *File) String() string {
+	if f.Program == nil {
+		return ""
+	}
+
 	return f.Program.String()
 }
 
@@ -100,18 +42,6 @@ type Program struct {
 	*Attr
 	SourceType string
 	Body       []Statement
-}
-
-func (p *Program) UnmarshalMap(m M) {
-	p.Attr = unmarshalAttr(m)
-	p.SourceType = convertString(m["sourceType"])
-	p.Body = unmarshalStatements(convertSliceMap(m["body"]))
-}
-
-func (p *Program) Compile(code *source.Code) {
-	for _, s := range p.Body {
-		s.Compile(code)
-	}
 }
 
 func (p *Program) String() string {
@@ -124,6 +54,53 @@ func (p *Program) String() string {
 	return out.String()
 }
 
+type Attr struct {
+	Type  string
+	Start int
+	End   int
+	Loc   *SourceLocation
+}
+
+type SourceLocation struct {
+	Start *Position
+	End   *Position
+}
+
+type Position struct {
+	Line   int
+	Column int
+}
+
+type Extra struct {
+	RawValue string
+	Raw      string
+}
+
+// statements
+
+type Statement interface {
+	Node
+	statementNode()
+}
+
+type ExpressionStatement struct {
+	*Attr
+	Expression Expression
+}
+
+func (e *ExpressionStatement) statementNode() {}
+
+func (e *ExpressionStatement) String() string {
+	return e.Expression.String()
+}
+
+// declarations
+
+type Declaration interface {
+	Statement
+	declarationNode()
+}
+
 type VariableDeclaration struct {
 	*Attr
 	Declarations []*VariableDeclarator
@@ -133,16 +110,6 @@ type VariableDeclaration struct {
 func (v *VariableDeclaration) statementNode() {}
 
 func (v *VariableDeclaration) declarationNode() {}
-
-func (v *VariableDeclaration) UnmarshalMap(m M) {
-	v.Attr = unmarshalAttr(m)
-	v.Kind = convertString(m["kind"])
-	v.Declarations = unmarshalVariableDeclarator(convertSliceMap(m["declarations"]))
-}
-
-func (v *VariableDeclaration) Compile(code *source.Code) {
-	// TODO
-}
 
 func (v *VariableDeclaration) String() string {
 	var out bytes.Buffer
@@ -161,16 +128,6 @@ type VariableDeclarator struct {
 	Init Expression
 }
 
-func (v *VariableDeclarator) UnmarshalMap(m M) {
-	v.Attr = unmarshalAttr(m)
-	v.Init = unmarshalExpression(convertMap(m["init"]))
-	v.ID = unmarshalIdentifier(convertMap(m["id"]))
-}
-
-func (v *VariableDeclarator) Compile(code *source.Code) {
-	// TODO
-}
-
 func (v *VariableDeclarator) String() string {
 	var out bytes.Buffer
 
@@ -180,6 +137,13 @@ func (v *VariableDeclarator) String() string {
 	return out.String()
 }
 
+// expressions
+
+type Expression interface {
+	Node
+	expressionNode()
+}
+
 type Identifier struct {
 	*Attr
 	Name string
@@ -187,51 +151,8 @@ type Identifier struct {
 
 func (i *Identifier) expressionNode() {}
 
-func (i *Identifier) UnmarshalMap(m M) {
-	i.Attr = unmarshalAttr(m)
-	i.Name = convertString(m["name"])
-}
-
-func (i *Identifier) Compile(code *source.Code) {
-	code.Write(strings.Title(i.Name))
-}
-
 func (i *Identifier) String() string {
 	return i.Name
-}
-
-type StringLiteral struct {
-	*Attr
-	Extra *Extra
-	Value string
-}
-
-func (s *StringLiteral) expressionNode() {}
-
-func (s *StringLiteral) literalNode() {}
-
-func (s *StringLiteral) UnmarshalMap(m M) {
-	s.Attr = unmarshalAttr(m)
-	s.Value = convertString(m["value"])
-	s.Extra = unmarshalExtra(convertMap(m["extra"]))
-}
-
-func (s *StringLiteral) String() string {
-	return fmt.Sprintf(`"%s"`, s.Value)
-}
-
-func (s *StringLiteral) Compile(code *source.Code) {
-	code.Write(fmt.Sprintf(`"%s"`, s.Value))
-}
-
-type Extra struct {
-	RawValue string
-	Raw      string
-}
-
-func (e *Extra) UnmarshalMap(m M) {
-	e.RawValue = convertString(m["rawValue"])
-	e.Raw = convertString(m["raw"])
 }
 
 type CallExpression struct {
@@ -241,24 +162,6 @@ type CallExpression struct {
 }
 
 func (c *CallExpression) expressionNode() {}
-
-func (c *CallExpression) UnmarshalMap(m M) {
-	c.Attr = unmarshalAttr(m)
-	c.Callee = unmarshalExpression(convertMap(m["callee"]))
-	c.Arguments = unmarshalExpressions(convertSliceMap(m["arguments"]))
-}
-
-func (c *CallExpression) Compile(code *source.Code) {
-	c.Callee.Compile(code)
-	code.Write("(")
-	for i, arg := range c.Arguments {
-		arg.Compile(code)
-		if i != len(c.Arguments)-1 {
-			code.Write(", ")
-		}
-	}
-	code.Write(")\n")
-}
 
 func (c *CallExpression) String() string {
 	var out bytes.Buffer
@@ -286,40 +189,27 @@ type MemberExpression struct {
 
 func (e *MemberExpression) expressionNode() {}
 
-func (e *MemberExpression) UnmarshalMap(m M) {
-	e.Attr = unmarshalAttr(m)
-	e.Object = unmarshalExpression(convertMap(m["object"]))
-	e.Property = unmarshalExpression(convertMap(m["property"]))
-	e.Computed = convertBool(m["computed"])
-}
-
-func (e *MemberExpression) Compile(code *source.Code) {
-	// TODO: ignoring computed value for now
-	e.Object.Compile(code)
-	code.Write(".")
-	e.Property.Compile(code)
-}
-
 func (e *MemberExpression) String() string {
 	return fmt.Sprintf("%s.%s", e.Object, e.Property)
 }
 
-type ExpressionStatement struct {
+// literals
+
+type Literal interface {
+	Expression
+	literalNode()
+}
+
+type StringLiteral struct {
 	*Attr
-	Expression Expression
+	Extra *Extra
+	Value string
 }
 
-func (e *ExpressionStatement) statementNode() {}
+func (s *StringLiteral) expressionNode() {}
 
-func (e *ExpressionStatement) UnmarshalMap(m M) {
-	e.Attr = unmarshalAttr(m)
-	e.Expression = unmarshalExpression(convertMap(m["expression"]))
-}
+func (s *StringLiteral) literalNode() {}
 
-func (e *ExpressionStatement) Compile(code *source.Code) {
-	e.Expression.Compile(code)
-}
-
-func (e *ExpressionStatement) String() string {
-	return e.Expression.String()
+func (s *StringLiteral) String() string {
+	return fmt.Sprintf(`"%s"`, s.Value)
 }

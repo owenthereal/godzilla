@@ -7,3 +7,9 @@ build-godzilla:
 
 build-godzilla-parser:
 	cd parser && npm install && npm run build
+
+test:
+	go test $$(go list ./... | grep -v "vendor\|ftest")
+
+ftest: build-godzilla-parser
+	go test ./ftest/...
