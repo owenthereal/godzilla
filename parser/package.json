@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run babel && npm run pkg",
     "babel": "babel src -d lib",
-    "pkg": "pkg -t node7-$(node -r 'os' -p 'os.platform()') --out-dir ../bin ."
+    "pkg": "pkg -t node8-$(node -r 'os' -p 'os.platform()') --out-dir ../bin ."
   },
   "author": "Jingwen Owen Ou",
   "dependencies": {
@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
-    "babel-preset-env": "^1.4.0",
-    "pkg": "^3.0.3"
+    "babel-preset-env": "^1.6.0",
+    "pkg": "^4.1.1"
   }
 }
