@@ -115,6 +115,7 @@ func (v *VariableDeclaration) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(v.Kind)
+	out.WriteString(" ")
 	for _, d := range v.Declarations {
 		out.WriteString(d.String())
 	}
@@ -132,7 +133,10 @@ func (v *VariableDeclarator) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(v.ID.String())
-	out.WriteString(v.Init.String())
+	if v.Init != nil {
+		out.WriteString(" = ")
+		out.WriteString(v.Init.String())
+	}
 
 	return out.String()
 }

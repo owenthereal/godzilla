@@ -148,8 +148,11 @@ func unmarshalVariableDeclarator(m []m) []*VariableDeclarator {
 	for _, mm := range m {
 		dd := &VariableDeclarator{}
 		dd.Attr = unmarshalAttr(mm)
-		dd.Init = unmarshalExpression(convertMap(mm["init"]))
 		dd.ID = unmarshalIdentifier(convertMap(mm["id"]))
+		if init := mm["init"]; init != nil {
+			dd.Init = unmarshalExpression(convertMap(init))
+		}
+
 		d = append(d, dd)
 	}
 

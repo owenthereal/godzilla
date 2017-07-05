@@ -3,16 +3,19 @@ package compiler
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/jingweno/godzilla/ast"
+	"github.com/jingweno/godzilla/runtime"
 	"github.com/jingweno/godzilla/source"
 )
 
 func Compile(f *ast.File) *source.Code {
 	code := source.NewCode()
 
-	c := &compiler{code}
+	c := &compiler{
+		code: code,
+		ctx:  runtime.NewDefaultContext(),
+	}
 	c.compile(f)
 
 	return code
@@ -20,6 +23,7 @@ func Compile(f *ast.File) *source.Code {
 
 type compiler struct {
 	code *source.Code
+	ctx  *runtime.Context
 }
 
 func (c *compiler) compile(f *ast.File) {
@@ -38,6 +42,8 @@ func (c *compiler) compileStatement(s ast.Statement) {
 	switch v := s.(type) {
 	case *ast.ExpressionStatement:
 		c.compileExpressionStatement(v)
+	case *ast.VariableDeclaration:
+		c.compileVariableDeclaration(v)
 	default:
 		panic("unknown statement type " + getType(v))
 	}
@@ -45,6 +51,29 @@ func (c *compiler) compileStatement(s ast.Statement) {
 
 func (c *compiler) compileExpressionStatement(es *ast.ExpressionStatement) {
 	c.compileExpression(es.Expression)
+}
+
+// TODO: ignore Kind for now
+func (c *compiler) compileVariableDeclaration(vd *ast.VariableDeclaration) {
+	for _, d := range vd.Declarations {
+		c.compileVariableDeclarator(d)
+	}
+}
+
+func (c *compiler) compileVariableDeclarator(vd *ast.VariableDeclarator) {
+	c.writeLineNo(vd, vd.Attr)
+	c.code.WriteLine(fmt.Sprintf("var %s Object", vd.ID))
+	c.code.WriteLine(fmt.Sprintf("_ = %s", vd.ID))
+	if vd.Init != nil {
+		c.code.Write(fmt.Sprintf("%s = ", vd.ID))
+		c.compileExpression(vd.Init)
+		c.code.WriteLine("")
+	}
+	c.code.WriteLine(fmt.Sprintf(`global.DefineProperty("%s", %s)`, vd.ID, vd.ID))
+}
+
+func (c *compiler) writeLineNo(node ast.Node, attr *ast.Attr) {
+	c.code.WriteLine(fmt.Sprintf(`// line %d: %s`, attr.Loc.Start.Line, node))
 }
 
 // expressions
@@ -65,31 +94,63 @@ func (c *compiler) compileExpression(e ast.Expression) {
 }
 
 func (c *compiler) compileCallExpression(ce *ast.CallExpression) {
+	c.writeLineNo(ce, ce.Attr)
 	c.compileExpression(ce.Callee)
-	c.code.Write("(")
+	c.code.Write("([]Object{")
 	for i, arg := range ce.Arguments {
 		c.compileExpression(arg)
 		if i != len(ce.Arguments)-1 {
 			c.code.Write(", ")
 		}
 	}
-	c.code.Write(")\n")
+	c.code.Write("})\n")
 }
 
 // TODO: ignoring computed value for now
 func (c *compiler) compileMemberExpression(me *ast.MemberExpression) {
-	c.compileExpression(me.Object)
-	c.code.Write(".")
-	c.compileExpression(me.Property)
+	if me.Computed {
+		panic("computed MemberExpression is not supported")
+	}
+
+	if builtInFunc := c.getBuiltinFunc(me.Object, me.Property); builtInFunc == "" {
+		c.compileExpression(me.Object)
+		c.code.Write(".")
+		c.compileExpression(me.Property)
+	} else {
+		c.code.Write(builtInFunc)
+	}
 }
 
-// TODO: look up from list of builtins
 func (c *compiler) compileIdentifier(i *ast.Identifier) {
-	c.code.Write(strings.Title(i.Name))
+	c.code.Write(fmt.Sprintf(`global.GetProperty("%s")`, i.Name))
 }
 
 func (c *compiler) compileStringLiteral(s *ast.StringLiteral) {
-	c.code.Write(fmt.Sprintf(`"%s"`, s.Value))
+	c.code.Write(fmt.Sprintf(`JSString("%s")`, s.Value))
+}
+
+func (c *compiler) getBuiltinFunc(objExp, propExp ast.Expression) string {
+	oID, ok := objExp.(*ast.Identifier)
+	if !ok {
+		return ""
+	}
+
+	pID := propExp.(*ast.Identifier)
+	if !ok {
+		return ""
+	}
+
+	obj := c.ctx.Global.GetProperty(oID.Name)
+	if obj == nil || obj.Type() != runtime.JS_OBJECT_TYPE_OBJECT {
+		return ""
+	}
+
+	prop := (obj.(*runtime.JSObject)).GetProperty(pID.Name)
+	if prop == nil || prop.Type() != runtime.JS_OBJECT_TYPE_FUNCTION {
+		return ""
+	}
+
+	return (prop.(*runtime.JSFunction)).FuncName()
 }
 
 func getType(myvar interface{}) string {

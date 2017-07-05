@@ -2,11 +2,21 @@ package runtime
 
 import "fmt"
 
-var Console = &console{}
+var (
+	console = &JSObject{
+		properties: map[string]Object{
+			"log": &JSFunction{
+				fn: Console_Log,
+			},
+		},
+	}
+)
 
-type console struct {
-}
+func Console_Log(data []Object) {
+	var i []interface{}
+	for _, d := range data {
+		i = append(i, d)
+	}
 
-func (c *console) Log(s string) {
-	fmt.Println(s)
+	fmt.Println(i...)
 }

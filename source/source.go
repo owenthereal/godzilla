@@ -14,6 +14,9 @@ import (
 )
 
 func main() {
+	global := NewDefaultContext().Global
+	_ = global
+
 	{{.}}
 }`
 

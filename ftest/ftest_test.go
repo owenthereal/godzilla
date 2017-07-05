@@ -8,22 +8,46 @@ import (
 	"testing"
 )
 
-func TestConsoleLog(t *testing.T) {
+func TestAll(t *testing.T) {
 	pwd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var out bytes.Buffer
-	cmd := exec.Command(filepath.Join(pwd, "..", "bin", "godzilla"), "run")
-	cmd.Stdin = bytes.NewBufferString(`console.log("Hello, Godzilla")`)
-	cmd.Stdout = &out
-	cmd.Stderr = &out
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("error running bin/godzilla error=%s stderr=%s", err, out)
+	tests := []struct {
+		name   string
+		input  string
+		output string
+	}{
+		{
+			name:   "console.log",
+			input:  "console.log('Hello, Godzilla')",
+			output: "Hello, Godzilla\n",
+		},
+		{
+			name:   "assignment",
+			input:  "let foo = 'hello'\nconsole.log(foo)",
+			output: "hello\n",
+		},
 	}
 
-	if want, got := "Hello, Godzilla\n", out.String(); want != got {
-		t.Fatalf("output doesn't match: want=%q got=%q", want, got)
+	bin := filepath.Join(pwd, "..", "bin", "godzilla")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			var out bytes.Buffer
+			cmd := exec.Command(bin, "run")
+			cmd.Stdin = bytes.NewBufferString(test.input)
+			cmd.Stdout = &out
+			cmd.Stderr = &out
+			if err := cmd.Run(); err != nil {
+				t.Fatalf("error running test case %s error=%s stderr=%s", test.name, err, out)
+			}
+
+			if want, got := test.output, out.String(); want != got {
+				t.Fatalf("output doesn't match for test %s: want=%q got=%q", test.name, want, got)
+			}
+		})
 	}
 }
