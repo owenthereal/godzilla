@@ -109,6 +109,8 @@ func unmarshalExpression(m m) Expression {
 		e = unmarshalCallExpression(m)
 	case "MemberExpression":
 		e = unmarshalMemberExpression(m)
+	case "AssignmentExpression":
+		e = unmarshalAssignmentExpression(m)
 	default:
 		panic("unsupport expression type " + t)
 	}
@@ -141,6 +143,16 @@ func unmarshalMemberExpression(m m) *MemberExpression {
 	e.Computed = convertBool(m["computed"])
 
 	return e
+}
+
+func unmarshalAssignmentExpression(m m) *AssignmentExpression {
+	a := &AssignmentExpression{}
+	a.Attr = unmarshalAttr(m)
+	a.Left = unmarshalExpression(convertMap(m["left"]))
+	a.Right = unmarshalExpression(convertMap(m["right"]))
+	a.Operator = AssignmentOperator(convertString(m["operator"]))
+
+	return a
 }
 
 func unmarshalVariableDeclarator(m []m) []*VariableDeclarator {

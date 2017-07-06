@@ -197,6 +197,21 @@ func (e *MemberExpression) String() string {
 	return fmt.Sprintf("%s.%s", e.Object, e.Property)
 }
 
+type AssignmentExpression struct {
+	*Attr
+	Operator AssignmentOperator
+	Left     Expression
+	Right    Expression
+}
+
+func (a *AssignmentExpression) expressionNode() {}
+
+func (a *AssignmentExpression) String() string {
+	return fmt.Sprintf("%s %s %s", a.Left, a.Operator, a.Right)
+}
+
+type AssignmentOperator string
+
 // literals
 
 type Literal interface {

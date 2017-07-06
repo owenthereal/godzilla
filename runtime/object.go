@@ -29,8 +29,13 @@ func (self *JSObject) DefineProperty(prop string, value Object) {
 	self.properties[prop] = value
 }
 
-func (self *JSObject) GetProperty(prop string) Object {
-	return self.properties[prop]
+func (self *JSObject) GetProperty(prop string) (Object, error) {
+	obj := self.properties[prop]
+	if obj == nil {
+		return nil, &ReferenceError{prop}
+	}
+
+	return obj, nil
 }
 
 type JSString string
