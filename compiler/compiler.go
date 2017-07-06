@@ -32,7 +32,9 @@ func (c *compiler) compile(f *ast.File) {
 
 func (c *compiler) compileProgram(p *ast.Program) {
 	for _, s := range p.Body {
+		c.writeLineNo(s)
 		c.compileStatement(s)
+		c.code.WriteLine("")
 	}
 }
 
@@ -43,7 +45,6 @@ func (c *compiler) compileStatement(s ast.Statement) {
 	case *ast.ExpressionStatement:
 		c.compileExpressionStatement(v)
 	case *ast.VariableDeclaration:
-		c.writeLineNo(v, v.Attr)
 		c.compileVariableDeclaration(v)
 	default:
 		panic("unknown statement type " + utils.TypeOf(v))
@@ -71,12 +72,8 @@ func (c *compiler) compileVariableDeclarator(vd *ast.VariableDeclarator) {
 		c.compileExpression(vd.Init)
 		c.code.WriteLine("")
 	}
-	c.code.WriteLine(fmt.Sprintf(`global.DefineProperty("%s", %s)`, name, name))
+	c.code.Write(fmt.Sprintf(`global.DefineProperty("%s", %s)`, name, name))
 	c.defineVar(name)
-}
-
-func (c *compiler) writeLineNo(node ast.Node, attr *ast.Attr) {
-	c.code.WriteLine(fmt.Sprintf(`// line %d: %s`, attr.Loc.Start.Line, node))
 }
 
 // expressions
@@ -84,17 +81,19 @@ func (c *compiler) writeLineNo(node ast.Node, attr *ast.Attr) {
 func (c *compiler) compileExpression(e ast.Expression) {
 	switch v := e.(type) {
 	case *ast.CallExpression:
-		c.writeLineNo(v, v.Attr)
 		c.compileCallExpression(v)
 	case *ast.AssignmentExpression:
-		c.writeLineNo(v, v.Attr)
 		c.compileAssignmentExpression(v)
+	case *ast.BinaryExpression:
+		c.compileBinaryExpression(v)
 	case *ast.MemberExpression:
 		c.compileMemberExpression(v)
 	case *ast.Identifier:
 		c.compileIdentifier(v)
 	case *ast.StringLiteral:
 		c.compileStringLiteral(v)
+	case *ast.NumericLiteral:
+		c.compileNumericLiteral(v)
 	default:
 		panic("unknown expression type " + utils.TypeOf(v))
 	}
@@ -131,7 +130,12 @@ func (c *compiler) compileAssignmentExpression(ae *ast.AssignmentExpression) {
 	c.compileExpression(ae.Left)
 	c.code.Write(fmt.Sprintf(" %s ", ae.Operator))
 	c.compileExpression(ae.Right)
-	c.code.WriteLine("")
+}
+
+func (c *compiler) compileBinaryExpression(be *ast.BinaryExpression) {
+	c.compileExpression(be.Left)
+	c.code.Write(fmt.Sprintf(" %s ", be.Operator))
+	c.compileExpression(be.Right)
 }
 
 func (c *compiler) compileIdentifier(i *ast.Identifier) {
@@ -144,6 +148,14 @@ func (c *compiler) compileIdentifier(i *ast.Identifier) {
 
 func (c *compiler) compileStringLiteral(s *ast.StringLiteral) {
 	c.code.Write(fmt.Sprintf(`JSString("%s")`, s.Value))
+}
+
+func (c *compiler) compileNumericLiteral(n *ast.NumericLiteral) {
+	c.code.Write(fmt.Sprintf(`JSNumber(%f)`, n.Value))
+}
+
+func (c *compiler) writeLineNo(node ast.Node) {
+	c.code.WriteLine(fmt.Sprintf(`// line %d: %s`, node.GetAttr().Loc.Start.Line, node))
 }
 
 // defineVar defines the var when the compiler sees it

@@ -34,6 +34,16 @@ func TestAll(t *testing.T) {
 			input:  "let foo\nfoo = 'hello'\nconsole.log(foo)",
 			output: "hello\n",
 		},
+		{
+			name:   "numeric",
+			input:  "console.log(10)",
+			output: "10\n",
+		},
+		{
+			name:   "binary expression",
+			input:  "console.log(1 + 1)",
+			output: "2\n",
+		},
 	}
 
 	bin := filepath.Join(pwd, "..", "bin", "godzilla")

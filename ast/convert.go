@@ -21,6 +21,10 @@ func convertInt(i interface{}) int {
 	return int(i.(float64))
 }
 
+func convertFloat(i interface{}) float64 {
+	return i.(float64)
+}
+
 func convertBool(i interface{}) bool {
 	return i.(bool)
 }
