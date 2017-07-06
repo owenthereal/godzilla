@@ -18,7 +18,7 @@ func TestCompile(t *testing.T) {
 	}
 
 	code := Compile(f)
-	if !strings.Contains(code.String(), `Console.Log("Hello, Godzilla")`) {
+	if !strings.Contains(code.String(), `Console_Log([]Object{JSString("Hello, Godzilla")}`) {
 		t.Fatalf("compiler has error:\n%s", code)
 	}
 }

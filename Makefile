@@ -11,5 +11,5 @@ build-godzilla-parser:
 test:
 	go test $$(go list ./... | grep -v "vendor\|ftest")
 
-ftest: build-godzilla-parser
-	go test ./ftest/...
+ftest: build
+	go test -v ./ftest/...

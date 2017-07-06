@@ -18,6 +18,7 @@ import (
 
 var (
 	parserPath          string
+	debug               bool
 	buildJavaScriptFile string
 	buildGoOutFile      string
 )
@@ -39,6 +40,7 @@ func main() {
 	rootCmd.AddCommand(cmdBuild)
 	rootCmd.AddCommand(cmdRun)
 	rootCmd.PersistentFlags().StringVarP(&parserPath, "parser-path", "p", filepath.Join(filepath.Dir(os.Args[0]), "godzilla-parser"), "path to godzilla-parser")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "run in debug mode")
 	rootCmd.Execute()
 }
 
@@ -66,7 +68,19 @@ func compileMain() (string, error) {
 		return "", err
 	}
 
-	return writeMainFile(source)
+	main, err := writeMainFile(source)
+	if err != nil {
+		return "", err
+	}
+
+	if debug {
+		err := formatAndPrintGoSource(main)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return main, nil
 }
 
 func compileSource() (*source.Code, error) {
@@ -107,6 +121,21 @@ func writeMainFile(code *source.Code) (string, error) {
 	return mainFile.Name(), nil
 }
 
+func formatAndPrintGoSource(file string) error {
+	if err := goFmt(file); err != nil {
+		return err
+	}
+
+	out, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(out))
+
+	return nil
+}
+
 func goBuild(mainFile, outFile string) error {
 	goBin, err := exec.LookPath("go")
 	if err != nil {
@@ -123,4 +152,14 @@ func goRun(mainFile string) error {
 	}
 
 	return syscall.Exec(goBin, []string{"go", "run", mainFile}, os.Environ())
+}
+
+func goFmt(mainFile string) error {
+	cmd := exec.Command("go", "fmt", mainFile)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Errorf("error running `go fmt %s`: error=%s out=%s", err, out)
+	}
+
+	return nil
 }
