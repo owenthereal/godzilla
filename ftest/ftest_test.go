@@ -25,8 +25,13 @@ func TestAll(t *testing.T) {
 			output: "Hello, Godzilla\n",
 		},
 		{
-			name:   "assignment",
+			name:   "variable declaration",
 			input:  "let foo = 'hello'\nconsole.log(foo)",
+			output: "hello\n",
+		},
+		{
+			name:   "assignment",
+			input:  "let foo\nfoo = 'hello'\nconsole.log(foo)",
 			output: "hello\n",
 		},
 	}
