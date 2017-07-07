@@ -1,26 +1,22 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 
-	"github.com/jingweno/godzilla/ast"
-	"github.com/jingweno/godzilla/compiler"
-	"github.com/jingweno/godzilla/source"
+	"github.com/jingweno/godzilla/build"
 	"github.com/spf13/cobra"
 )
 
 var (
-	parserPath          string
-	debug               bool
-	buildJavaScriptFile string
-	buildGoOutFile      string
+	parserPath     string
+	debug          bool
+	buildGoOutFile string
 )
 
 func main() {
@@ -30,7 +26,6 @@ func main() {
 		Short: "compile JavaScript program",
 		RunE:  runBuild,
 	}
-	cmdBuild.PersistentFlags().StringVarP(&buildJavaScriptFile, "js", "", "", "path to JavaScript file")
 	cmdBuild.PersistentFlags().StringVarP(&buildGoOutFile, "output", "o", "", "output file")
 	cmdRun := &cobra.Command{
 		Use:   "run",
@@ -40,98 +35,73 @@ func main() {
 	rootCmd.AddCommand(cmdBuild)
 	rootCmd.AddCommand(cmdRun)
 	rootCmd.PersistentFlags().StringVarP(&parserPath, "parser-path", "p", filepath.Join(filepath.Dir(os.Args[0]), "godzilla-parser"), "path to godzilla-parser")
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "run in debug mode")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "x", false, "print compiled source")
 	rootCmd.Execute()
 }
 
 func runBuild(cmd *cobra.Command, args []string) error {
-	mainFile, err := compileMain()
+	r := os.Stdin
+	if len(args) > 0 {
+		f, err := os.Open(args[0])
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		r = f
+		if buildGoOutFile == "" {
+			buildGoOutFile = strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
+		}
+	}
+
+	mainFile, err := build.Run(parserPath, r)
 	if err != nil {
 		return err
+	}
+
+	if debug {
+		err := printCompiledSource(mainFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	return goBuild(mainFile, buildGoOutFile)
 }
 
 func runRun(cmd *cobra.Command, args []string) error {
-	mainFile, err := compileMain()
+	r := os.Stdin
+	if len(args) > 0 {
+		f, err := os.Open(args[0])
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		r = f
+	}
+
+	mainFile, err := build.Run(parserPath, r)
 	if err != nil {
 		return err
+	}
+
+	if debug {
+		err := printCompiledSource(mainFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	return goRun(mainFile)
 }
 
-func compileMain() (string, error) {
-	source, err := compileSource()
-	if err != nil {
-		return "", err
-	}
-
-	main, err := writeMainFile(source)
-	if err != nil {
-		return "", err
-	}
-
-	if debug {
-		err := formatAndPrintGoSource(main)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return main, nil
-}
-
-func compileSource() (*source.Code, error) {
-	c := exec.Command(parserPath)
-	c.Stdin = os.Stdin
-	stdoutStderr, err := c.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("error parsing JavaScript %s: %s", err, stdoutStderr)
-	}
-
-	f := &ast.File{}
-	if err := json.NewDecoder(bytes.NewBuffer(stdoutStderr)).Decode(f); err != nil {
-		return nil, err
-	}
-
-	return compiler.Compile(f), nil
-}
-
-func writeMainFile(code *source.Code) (string, error) {
-	mainDir, err := ioutil.TempDir("", "main")
-	if err != nil {
-		return "", err
-	}
-
-	mainFile, err := os.OpenFile(filepath.Join(mainDir, "main.go"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return "", err
-	}
-
-	if err := code.WriteTo(mainFile); err != nil {
-		return "", err
-	}
-
-	if err := mainFile.Close(); err != nil {
-		return "", err
-	}
-
-	return mainFile.Name(), nil
-}
-
-func formatAndPrintGoSource(file string) error {
-	if err := goFmt(file); err != nil {
-		return err
-	}
-
-	out, err := ioutil.ReadFile(file)
+func printCompiledSource(mainFile string) error {
+	out, err := ioutil.ReadFile(mainFile)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(out))
+	fmt.Printf("%s", out)
 
 	return nil
 }
@@ -152,14 +122,4 @@ func goRun(mainFile string) error {
 	}
 
 	return syscall.Exec(goBin, []string{"go", "run", mainFile}, os.Environ())
-}
-
-func goFmt(mainFile string) error {
-	cmd := exec.Command("go", "fmt", mainFile)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Errorf("error running `go fmt %s`: error=%s out=%s", err, out)
-	}
-
-	return nil
 }
