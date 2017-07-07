@@ -11,6 +11,7 @@ type m map[string]interface{}
 
 type Node interface {
 	fmt.Stringer
+	GetAttr() *Attr
 }
 
 type File struct {
@@ -30,6 +31,10 @@ func (f *File) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (f *File) GetAttr() *Attr {
+	return f.Attr
+}
+
 func (f *File) String() string {
 	if f.Program == nil {
 		return ""
@@ -42,6 +47,10 @@ type Program struct {
 	*Attr
 	SourceType string
 	Body       []Statement
+}
+
+func (p *Program) GetAttr() *Attr {
+	return p.Attr
 }
 
 func (p *Program) String() string {
@@ -72,8 +81,8 @@ type Position struct {
 }
 
 type Extra struct {
-	RawValue string
-	Raw      string
+	RawValue interface{}
+	Raw      interface{}
 }
 
 // statements
@@ -89,6 +98,10 @@ type ExpressionStatement struct {
 }
 
 func (e *ExpressionStatement) statementNode() {}
+
+func (e *ExpressionStatement) GetAttr() *Attr {
+	return e.Attr
+}
 
 func (e *ExpressionStatement) String() string {
 	return e.Expression.String()
@@ -111,6 +124,10 @@ func (v *VariableDeclaration) statementNode() {}
 
 func (v *VariableDeclaration) declarationNode() {}
 
+func (v *VariableDeclaration) GetAttr() *Attr {
+	return v.Attr
+}
+
 func (v *VariableDeclaration) String() string {
 	var out bytes.Buffer
 
@@ -127,6 +144,10 @@ type VariableDeclarator struct {
 	*Attr
 	ID   *Identifier
 	Init Expression
+}
+
+func (v *VariableDeclarator) GetAttr() *Attr {
+	return v.Attr
 }
 
 func (v *VariableDeclarator) String() string {
@@ -155,6 +176,10 @@ type Identifier struct {
 
 func (i *Identifier) expressionNode() {}
 
+func (i *Identifier) GetAttr() *Attr {
+	return i.Attr
+}
+
 func (i *Identifier) String() string {
 	return i.Name
 }
@@ -166,6 +191,10 @@ type CallExpression struct {
 }
 
 func (c *CallExpression) expressionNode() {}
+
+func (c *CallExpression) GetAttr() *Attr {
+	return c.Attr
+}
 
 func (c *CallExpression) String() string {
 	var out bytes.Buffer
@@ -193,6 +222,10 @@ type MemberExpression struct {
 
 func (e *MemberExpression) expressionNode() {}
 
+func (m *MemberExpression) GetAttr() *Attr {
+	return m.Attr
+}
+
 func (e *MemberExpression) String() string {
 	return fmt.Sprintf("%s.%s", e.Object, e.Property)
 }
@@ -206,11 +239,34 @@ type AssignmentExpression struct {
 
 func (a *AssignmentExpression) expressionNode() {}
 
+func (a *AssignmentExpression) GetAttr() *Attr {
+	return a.Attr
+}
+
 func (a *AssignmentExpression) String() string {
 	return fmt.Sprintf("%s %s %s", a.Left, a.Operator, a.Right)
 }
 
 type AssignmentOperator string
+
+type BinaryExpression struct {
+	*Attr
+	Operator BinaryOperator
+	Left     Expression
+	Right    Expression
+}
+
+func (b *BinaryExpression) expressionNode() {}
+
+func (b *BinaryExpression) GetAttr() *Attr {
+	return b.Attr
+}
+
+func (a *BinaryExpression) String() string {
+	return fmt.Sprintf("%s %s %s", a.Left, a.Operator, a.Right)
+}
+
+type BinaryOperator string
 
 // literals
 
@@ -229,6 +285,30 @@ func (s *StringLiteral) expressionNode() {}
 
 func (s *StringLiteral) literalNode() {}
 
+func (s *StringLiteral) GetAttr() *Attr {
+	return s.Attr
+}
+
 func (s *StringLiteral) String() string {
 	return fmt.Sprintf(`"%s"`, s.Value)
+}
+
+// TODO: Value is always float64
+// Can delay conversion and adapt to int vs. float
+type NumericLiteral struct {
+	*Attr
+	Extra *Extra
+	Value float64
+}
+
+func (n *NumericLiteral) expressionNode() {}
+
+func (n *NumericLiteral) literalNode() {}
+
+func (n *NumericLiteral) GetAttr() *Attr {
+	return n.Attr
+}
+
+func (n *NumericLiteral) String() string {
+	return fmt.Sprintf("%.16f", n.Value)
 }

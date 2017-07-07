@@ -16,6 +16,7 @@ type JSObjectType string
 const (
 	JS_OBJECT_TYPE_OBJECT   = "object"
 	JS_OBJECT_TYPE_STRING   = "string"
+	JS_OBJECT_TYPE_NUMBER   = "number"
 	JS_OBJECT_TYPE_FUNCTION = "function"
 )
 
@@ -41,6 +42,10 @@ func (self *JSObject) GetProperty(prop string) (Object, error) {
 type JSString string
 
 func (self JSString) Type() JSObjectType { return JS_OBJECT_TYPE_STRING }
+
+type JSNumber float64
+
+func (self JSNumber) Type() JSObjectType { return JS_OBJECT_TYPE_NUMBER }
 
 type JSFunction struct {
 	fn func([]Object)

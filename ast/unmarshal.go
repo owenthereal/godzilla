@@ -37,8 +37,8 @@ func unmarshalPosition(m m) *Position {
 
 func unmarshalExtra(m m) *Extra {
 	e := &Extra{}
-	e.RawValue = convertString(m["rawValue"])
-	e.Raw = convertString(m["raw"])
+	e.RawValue = m["rawValue"]
+	e.Raw = m["raw"]
 
 	return e
 }
@@ -105,12 +105,16 @@ func unmarshalExpression(m m) Expression {
 		e = unmarshalIdentifier(m)
 	case "StringLiteral":
 		e = unmarshalStringLiteral(m)
+	case "NumericLiteral":
+		e = unmarshalNumericLiteral(m)
 	case "CallExpression":
 		e = unmarshalCallExpression(m)
 	case "MemberExpression":
 		e = unmarshalMemberExpression(m)
 	case "AssignmentExpression":
 		e = unmarshalAssignmentExpression(m)
+	case "BinaryExpression":
+		e = unmarshalBinaryExpression(m)
 	default:
 		panic("unsupport expression type " + t)
 	}
@@ -155,6 +159,16 @@ func unmarshalAssignmentExpression(m m) *AssignmentExpression {
 	return a
 }
 
+func unmarshalBinaryExpression(m m) *BinaryExpression {
+	b := &BinaryExpression{}
+	b.Attr = unmarshalAttr(m)
+	b.Left = unmarshalExpression(convertMap(m["left"]))
+	b.Right = unmarshalExpression(convertMap(m["right"]))
+	b.Operator = BinaryOperator(convertString(m["operator"]))
+
+	return b
+}
+
 func unmarshalVariableDeclarator(m []m) []*VariableDeclarator {
 	var d []*VariableDeclarator
 	for _, mm := range m {
@@ -178,4 +192,13 @@ func unmarshalStringLiteral(m m) *StringLiteral {
 	s.Extra = unmarshalExtra(convertMap(m["extra"]))
 
 	return s
+}
+
+func unmarshalNumericLiteral(m m) *NumericLiteral {
+	n := &NumericLiteral{}
+	n.Attr = unmarshalAttr(m)
+	n.Value = convertFloat(m["value"])
+	n.Extra = unmarshalExtra(convertMap(m["extra"]))
+
+	return n
 }
