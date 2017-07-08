@@ -154,8 +154,8 @@ func (c *compiler) compileNumericLiteral(n *ast.NumericLiteral) {
 	c.code.Write(fmt.Sprintf(`JSNumber(%f)`, n.Value))
 }
 
-func (c *compiler) writeLineNo(node ast.Node) {
-	c.code.WriteLine(fmt.Sprintf(`// line %d: %s`, node.GetAttr().Loc.Start.Line, node))
+func (c *compiler) writeLineNo(s ast.Statement) {
+	c.code.WriteLine(fmt.Sprintf(`// line %d: %s`, s.GetAttr().Loc.Start.Line, s))
 }
 
 // defineVar defines the var when the compiler sees it

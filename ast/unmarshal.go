@@ -62,6 +62,8 @@ func unmarshalStatement(m m) Statement {
 		s = unmarshalVariableDeclaration(m)
 	case "ExpressionStatement":
 		s = unmarshalExpressionStatement(m)
+	case "BlockStatement":
+		s = unmarshalBlockStatement(m)
 	default:
 		panic("unsupport statement type " + t)
 	}
@@ -115,6 +117,8 @@ func unmarshalExpression(m m) Expression {
 		e = unmarshalAssignmentExpression(m)
 	case "BinaryExpression":
 		e = unmarshalBinaryExpression(m)
+	case "FunctionExpression":
+		e = unmarshalFunctionExpression(m)
 	default:
 		panic("unsupport expression type " + t)
 	}
@@ -167,6 +171,46 @@ func unmarshalBinaryExpression(m m) *BinaryExpression {
 	b.Operator = BinaryOperator(convertString(m["operator"]))
 
 	return b
+}
+
+func unmarshalFunctionExpression(m m) *FunctionExpression {
+	f := &FunctionExpression{}
+	f.Attr = unmarshalAttr(m)
+	f.Function = unmarshalFunction(m)
+
+	return f
+}
+
+func unmarshalFunction(m m) *Function {
+	f := &Function{}
+	if m["id"] != nil {
+		f.ID = unmarshalIdentifier(convertMap(m["id"]))
+	}
+	f.Body = unmarshalBlockStatement(convertMap(m["body"]))
+	f.Params = unmarshalFunctionParams(convertSliceMap(m["params"]))
+	f.Generator = convertBool(m["generator"])
+	f.Async = convertBool(m["async"])
+	f.Expression = convertBool(m["expression"])
+
+	return f
+}
+
+func unmarshalBlockStatement(m m) *BlockStatement {
+	b := &BlockStatement{}
+	b.Body = unmarshalStatements(convertSliceMap(m["body"]))
+	// TODO: missing Directive
+
+	return b
+}
+
+// TODO: only consider expression as params for now
+func unmarshalFunctionParams(m []m) []Pattern {
+	var p []Pattern
+	for _, mm := range m {
+		p = append(p, unmarshalExpression(mm))
+	}
+
+	return p
 }
 
 func unmarshalVariableDeclarator(m []m) []*VariableDeclarator {

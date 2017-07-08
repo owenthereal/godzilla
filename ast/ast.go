@@ -11,7 +11,6 @@ type m map[string]interface{}
 
 type Node interface {
 	fmt.Stringer
-	GetAttr() *Attr
 }
 
 type File struct {
@@ -85,10 +84,48 @@ type Extra struct {
 	Raw      interface{}
 }
 
+type Pattern Node
+
+type Function struct {
+	ID         *Identifier
+	Body       *BlockStatement
+	Params     []Pattern
+	Generator  bool
+	Async      bool
+	Expression bool
+}
+
+func (f *Function) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("function")
+	if f.ID != nil {
+		out.WriteString(" ")
+		out.WriteString(f.ID.String())
+	}
+
+	out.WriteString("(")
+
+	var params []string
+	for _, param := range f.Params {
+		params = append(params, param.String())
+	}
+	out.WriteString(strings.Join(params, ", "))
+
+	out.WriteString(") { ... }")
+
+	return out.String()
+}
+
+type Directive struct {
+	Value *DirectiveLiteral
+}
+
 // statements
 
 type Statement interface {
 	Node
+	GetAttr() *Attr
 	statementNode()
 }
 
@@ -105,6 +142,29 @@ func (e *ExpressionStatement) GetAttr() *Attr {
 
 func (e *ExpressionStatement) String() string {
 	return e.Expression.String()
+}
+
+type BlockStatement struct {
+	*Attr
+	Body       []Statement
+	Directives []Directive
+}
+
+func (b *BlockStatement) statementNode() {}
+
+func (b *BlockStatement) GetAttr() *Attr {
+	return b.Attr
+}
+
+func (b *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, body := range b.Body {
+		out.WriteString(body.String())
+		out.WriteString("\n")
+	}
+
+	return out.String()
 }
 
 // declarations
@@ -166,6 +226,7 @@ func (v *VariableDeclarator) String() string {
 
 type Expression interface {
 	Node
+	GetAttr() *Attr
 	expressionNode()
 }
 
@@ -268,6 +329,21 @@ func (a *BinaryExpression) String() string {
 
 type BinaryOperator string
 
+type FunctionExpression struct {
+	*Attr
+	*Function
+}
+
+func (f *FunctionExpression) expressionNode() {}
+
+func (f *FunctionExpression) GetAttr() *Attr {
+	return f.Attr
+}
+
+func (f *FunctionExpression) String() string {
+	return f.Function.String()
+}
+
 // literals
 
 type Literal interface {
@@ -292,6 +368,8 @@ func (s *StringLiteral) GetAttr() *Attr {
 func (s *StringLiteral) String() string {
 	return fmt.Sprintf(`"%s"`, s.Value)
 }
+
+type DirectiveLiteral StringLiteral
 
 // TODO: Value is always float64
 // Can delay conversion and adapt to int vs. float
