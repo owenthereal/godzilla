@@ -48,7 +48,7 @@ Hello, Godzilla
 node hello.js  0.07s user 0.03s system 70% cpu 0.137 total
 ```
 
-## Talk
+## Talks
 
 You can find my GopherCon 2017 lightening talk [here](https://www.youtube.com/watch?v=zSW0nKArIvU).
 
